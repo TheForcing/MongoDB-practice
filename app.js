@@ -10,6 +10,8 @@ const app = express();
 //set(키,값)
 //get(키)
 
+//etag를 사용하지 않음
+app.set("etag", false);
 //환경 변수에 PORT가 설정되어 있으면 그 값을 사용
 //설정이 안되어 있으면 3000
 app.set(`port`, process.env.PORT || 3000);
@@ -20,6 +22,11 @@ const logger = require("morgan"); ///로거 불러오기
 // 로거를 express 에 추가: 미들웨어 추가
 app.use(logger("dev"));
 
+//view 엔진 설정
+app.set("view engine","ejs"); //뷰엔진으로 ejs사용 선언
+app.set("views", __dirname + "/views"); //템플릿의 위치
+
+
 //정적 웹의 제공
 //미들웨어 express.static 미들웨어 함수를 등록
 app.use(express.static(__dirname +"/public"));
@@ -27,13 +34,16 @@ app.use(express.static(__dirname +"/public"));
 //Get 메서드 요청의 처리
 //app.get(url, callback)
 app.get("/", (req,resp)=>{
-    //http 모듈의 응답 처리메서드
-    console.log("[GET] /");
-    resp.writeHead(200, {
-        'Contetn-Type': 'text/html; charset=UTF-8'
-    });
-    resp.write("Express Welcoms You!");
-    resp.end(); 
+    // //http 모듈의 응답 처리메서드
+    // console.log("[GET] /");
+    // resp.writeHead(200, {
+    //     'Contetn-Type': 'text/html; charset=UTF-8'
+    // });
+    // resp.write("Express Welcoms You!");
+    // resp.end(); 
+    resp.status(200)
+        .contentType("text/html;charset=utf-8")
+        .render("home");
 });
 
 app.get("/welcome", (req,resp)=>{
@@ -64,6 +74,25 @@ app.get("/request",(req,resp)=> {
                 .send("Name:"+paramName);
         }
 })
+
+// URL 파라미터 처리(Fancy URL, Prettey URL)
+// URL의 경로 일부로 데이터 전송하는 방식
+app.get("/urlparam/:name", (req,resp)=>{
+    //url 파라미터는 params 객체로 얻어온다
+    let userName = req.params.name;
+    resp.writeHead(200,{"Content-Type": "text/html;charset=UTF-8"})
+    resp.write("<h1>name:"+userName+"</h1>")
+    resp.write("<p>URL 파라미터를 전달 받았습니다.</p>")
+    resp.send();
+});
+
+//뷰엔진 활용
+app.get("/render",(req,resp)=>{
+    //응답객체의 render 메서드 활용
+     resp.contentType("text/html;charset=utf-8")
+         .render("render");
+});
+
 // 서버 strat
 http.createServer(app).listen(app.get("port"),()=>{
     console.log("Web Server is running on port:"+app.get("port"));
