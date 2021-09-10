@@ -21,6 +21,10 @@ app.set(`port`, process.env.PORT || 3000);
 const logger = require("morgan"); ///로거 불러오기
 // 로거를 express 에 추가: 미들웨어 추가
 app.use(logger("dev"));
+//MONGODB
+const { MongoClient} = require("mongodb");
+const { Router } = require("express");
+
 
 //view 엔진 설정
 app.set("view engine","ejs"); //뷰엔진으로 ejs사용 선언
@@ -31,6 +35,10 @@ app.set("views", __dirname + "/views"); //템플릿의 위치
 //미들웨어 express.static 미들웨어 함수를 등록
 app.use(express.static(__dirname +"/public"));
 
+//body-parser등록
+// 4.16 버전 이후에는 express 내부에 body-Parser가 포함
+// Post 요청을 처리할 수 있게 된다.
+app.use(express.urlencoded({extended: false}));
 //Get 메서드 요청의 처리
 //app.get(url, callback)
 app.get("/", (req,resp)=>{
@@ -93,7 +101,36 @@ app.get("/render",(req,resp)=>{
          .render("render");
 });
 
-// 서버 strat
+//  Router 등록(미들웨어)
+const webRouter = require("./router/WebRouter")(app);
+app.use("/web",webRouter);
+const apiRouter = require("./router/APIRouter")(app);
+app.use("/api",apiRouter);
+function startServer() {
+    // database 연결 정보
+    const dburl  = "mongodb://localhost:27017";
+    // database Connect
+    MongoClient.connect(dburl, { useNewUrlParser:true})
+          .then(client=>{
+              //db선택
+              console.log("데이터베이스에 연결 되었습니다.");
+              let db= client.db("mydb")
+              //익스프레스에 추가
+              app.set("db", db); // db키로 몽고 클라이언트 추가
+              // express 실행
+              startExpress();
+          })
+          .catch(reason=>{
+              console.error(reason);
+          })
+
+}
+
+
+function startExpress(){
+ // 서버 strat
 http.createServer(app).listen(app.get("port"),()=>{
     console.log("Web Server is running on port:"+app.get("port"));
 })
+}
+startServer();
